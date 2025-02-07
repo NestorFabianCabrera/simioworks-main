@@ -167,7 +167,26 @@ export const useGroupStore = defineStore('groups', {
         const response = await axios.post(`${API_URL}/groups/${groupId}/invite`);
         return response.data;
       } catch (error: any) {
-        this.error = error.response?.data?.error || error.message || 'Error al generar el enlace de invitación';
+        this.error = error.response?.data?.error || error.message || 'Error al generar enlace de invitación';
+        throw new Error(this.error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async joinGroupByInvite(inviteCode: string) {
+      try {
+        this.loading = true;
+        this.error = null;
+        const response = await axios.post(`${API_URL}/groups/join/${inviteCode}`);
+        // Agregar el grupo a la lista si no existe
+        const groupExists = this.groups.some(g => g._id === response.data._id);
+        if (!groupExists) {
+          this.groups.unshift(response.data);
+        }
+        return response.data;
+      } catch (error: any) {
+        this.error = error.response?.data?.error || error.message || 'Error al unirse al grupo';
         throw new Error(this.error);
       } finally {
         this.loading = false;

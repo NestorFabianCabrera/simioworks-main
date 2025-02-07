@@ -3,6 +3,7 @@ import { onMounted } from 'vue';
 import { useAuthStore } from './stores/auth';
 import { RouterView } from 'vue-router';
 import { useRouter } from 'vue-router';
+import NotificationToast from './components/common/NotificationToast.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -48,6 +49,7 @@ onMounted(() => {
     </nav>
     
     <main>
+      <NotificationToast />
       <RouterView />
     </main>
   </div>

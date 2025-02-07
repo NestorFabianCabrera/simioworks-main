@@ -105,7 +105,7 @@ const generateInviteLink = async () => {
   
   try {
     const response = await groupStore.generateInviteLink(route.params.id.toString());
-    inviteLink.value = `${window.location.origin}/groups/join/${response.inviteCode}`;
+    inviteLink.value = `${window.location.origin}/dashboard?invite=${response.inviteCode}`;
     showInviteModal.value = true;
   } catch (err: any) {
     console.error('Error generating invite link:', err);
@@ -375,11 +375,17 @@ onUnmounted(() => {
       </div>
 
       <!-- Invite Modal -->
-      <div v-if="showInviteModal" class="modal">
+      <div v-if="showInviteModal" class="modal" @click.self="showInviteModal = false">
         <div class="modal-content">
-          <h2>Invitar al Grupo</h2>
-          <div class="invite-link-container">
-            <p>Comparte este enlace para invitar a otros usuarios al grupo:</p>
+          <div class="modal-header">
+            <h2>Invitar al Grupo</h2>
+            <button class="close-button" @click="showInviteModal = false">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="modal-body">
+            <p class="modal-description">Comparte este enlace para invitar a otros usuarios al grupo:</p>
             <div class="invite-link-box">
               <input
                 type="text"
@@ -392,12 +398,14 @@ onUnmounted(() => {
                 class="copy-button"
                 :class="{ 'success': copySuccess }"
               >
+                <i :class="copySuccess ? 'fas fa-check' : 'fas fa-copy'"></i>
                 {{ copySuccess ? '¡Copiado!' : 'Copiar' }}
               </button>
             </div>
           </div>
-          <div class="modal-actions">
-            <button type="button" @click="showInviteModal = false">
+
+          <div class="modal-footer">
+            <button class="cancel-button" @click="showInviteModal = false">
               Cerrar
             </button>
           </div>
@@ -821,50 +829,128 @@ onUnmounted(() => {
   transform: translateY(-2px);
 }
 
-.invite-link-container {
-  margin-bottom: 1.5rem;
-}
-
 .invite-link-box {
   display: flex;
   gap: 0.5rem;
   margin-top: 1rem;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 0.5rem;
+  border-radius: 8px;
 }
 
 .invite-link-input {
   flex: 1;
-  padding: 0.75rem;
+  padding: 0.75rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.87);
+  color: white;
   font-size: 1rem;
 }
 
 .copy-button {
-  background-color: #646cff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent-color);
   color: white;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
+  border: none;
   border-radius: 8px;
-  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.25s, transform 0.2s;
-  min-width: 100px;
+  transition: all 0.2s;
+}
+
+.copy-button:hover {
+  background: var(--accent-color-dark);
 }
 
 .copy-button.success {
-  background-color: #2ecc71;
+  background: #10B981;
 }
 
-.tasks-list {
-  min-height: 200px;
+.copy-button i {
+  font-size: 1rem;
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.25rem;
   padding: 0.5rem;
+  transition: color 0.2s;
 }
 
-.ghost {
-  opacity: 0.5;
-  background: #646cff !important;
+.close-button:hover {
+  color: white;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-description {
+  color: #94a3b8;
+  margin: 0;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cancel-button {
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #1a1f25;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .task-detail-modal .modal-content {

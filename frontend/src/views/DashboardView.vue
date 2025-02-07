@@ -2,17 +2,80 @@
 import { ref, onMounted, computed } from 'vue';
 import { useGroupStore } from '../stores/groups';
 import { useAuthStore } from '../stores/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { useNotificationStore } from '../stores/notifications';
 
 const router = useRouter();
+const route = useRoute();
 const groupStore = useGroupStore();
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 
 const loading = ref(true);
 const showCreateModal = ref(false);
+const showJoinModal = ref(false);
+const joiningGroup = ref(false);
+const inviteCode = ref('');
+
 const newGroup = ref({
   title: '',
   description: ''
+});
+
+// Función para extraer el código de invitación de una URL
+const extractInviteCode = (input: string) => {
+  try {
+    const url = new URL(input);
+    const code = url.searchParams.get('invite') || url.pathname.split('/').pop();
+    return code;
+  } catch {
+    // Si no es una URL válida, asumimos que es el código directamente
+    return input;
+  }
+};
+
+const joinGroup = async () => {
+  if (!inviteCode.value) return;
+  
+  try {
+    joiningGroup.value = true;
+    const code = extractInviteCode(inviteCode.value);
+    await groupStore.joinGroupByInvite(code);
+    showJoinModal.value = false;
+    inviteCode.value = '';
+    notificationStore.success('¡Te has unido al grupo exitosamente!');
+  } catch (error: any) {
+    console.error('Error joining group:', error);
+    notificationStore.error(error.message || 'Error al unirse al grupo');
+  } finally {
+    joiningGroup.value = false;
+  }
+};
+
+// Verificar si hay un código de invitación en la URL al cargar
+onMounted(async () => {
+  try {
+    await groupStore.fetchGroups();
+    
+    // Verificar si hay un código de invitación en la URL
+    const inviteParam = route.query.invite as string;
+    if (inviteParam) {
+      try {
+        joiningGroup.value = true;
+        await groupStore.joinGroupByInvite(inviteParam);
+        // Limpiar el parámetro de la URL
+        router.replace({ query: {} });
+        notificationStore.success('¡Te has unido al grupo exitosamente!');
+      } catch (error: any) {
+        console.error('Error joining group from URL:', error);
+        notificationStore.error(error.message || 'Error al unirse al grupo');
+      } finally {
+        joiningGroup.value = false;
+      }
+    }
+  } finally {
+    loading.value = false;
+  }
 });
 
 const recentGroups = computed(() => {
@@ -37,14 +100,6 @@ const createGroup = async () => {
     console.error('Error creating group:', error);
   }
 };
-
-onMounted(async () => {
-  try {
-    await groupStore.fetchGroups();
-  } finally {
-    loading.value = false;
-  }
-});
 </script>
 
 <template>
@@ -54,10 +109,16 @@ onMounted(async () => {
         <h1>Bienvenido, {{ authStore.user?.username }}</h1>
         <p class="date">{{ new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) }}</p>
       </div>
-      <button @click="showCreateModal = true" class="create-button">
-        <i class="fas fa-plus"></i>
-        Crear Nuevo Grupo
-      </button>
+      <div class="actions">
+        <button @click="showCreateModal = true" class="create-button">
+          <i class="fas fa-plus"></i>
+          Crear Nuevo Grupo
+        </button>
+        <button @click="showJoinModal = true" class="join-button">
+          <i class="fas fa-link"></i>
+          Unirse a Grupo
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading">
@@ -119,6 +180,41 @@ onMounted(async () => {
               <i class="fas fa-arrow-right"></i>
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal para unirse a grupo -->
+    <div v-if="showJoinModal" class="modal-overlay" @click.self="showJoinModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Unirse a un Grupo</h2>
+          <button class="close-button" @click="showJoinModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="modal-body">
+          <p class="modal-description">Ingresa el código o URL de invitación para unirte a un grupo</p>
+          
+          <div class="form-group">
+            <input
+              v-model="inviteCode"
+              type="text"
+              placeholder="Código o URL de invitación"
+              :disabled="joiningGroup"
+            >
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="cancel-button" @click="showJoinModal = false" :disabled="joiningGroup">
+            Cancelar
+          </button>
+          <button class="confirm-button" @click="joinGroup" :disabled="!inviteCode || joiningGroup">
+            <i class="fas fa-spinner fa-spin" v-if="joiningGroup"></i>
+            <span>{{ joiningGroup ? 'Uniéndose...' : 'Unirse al Grupo' }}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -195,23 +291,42 @@ onMounted(async () => {
   opacity: 0.8;
 }
 
-.create-button {
+.actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.create-button,
+.join-button {
   padding: 0.75rem 1.5rem;
   border-radius: 9999px;
   border: none;
-  background: var(--accent-color);
-  color: white;
   font-weight: 500;
-  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-button {
+  background: var(--accent-color);
+  color: white;
+}
+
+.join-button {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .create-button:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
+  background: var(--accent-color-dark);
+}
+
+.join-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .dashboard-grid {
@@ -399,74 +514,122 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(5px);
 }
 
 .modal-content {
-  background: var(--background-secondary);
-  padding: 2rem;
-  border-radius: 12px;
-  width: 100%;
+  background: #1a1f25;
+  border-radius: 16px;
+  width: 90%;
   max-width: 500px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.modal-content h2 {
-  margin: 0 0 1.5rem 0;
-  color: var(--text-primary);
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.form-group {
-  margin-bottom: 1.5rem;
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: white;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
+.close-button {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.5rem;
+  transition: color 0.2s;
 }
 
-.form-group input,
-.form-group textarea {
+.close-button:hover {
+  color: white;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-description {
+  color: #94a3b8;
+  margin: 0 0 1.5rem;
+}
+
+.modal-body .form-group {
+  margin-bottom: 1rem;
+}
+
+.modal-body input {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.75rem 1rem;
   background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: white;
   font-size: 1rem;
+  transition: all 0.2s;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
+.modal-body input:focus {
   outline: none;
   border-color: var(--accent-color);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.modal-actions {
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
+}
+
+.modal-footer button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .cancel-button {
-  padding: 0.75rem 1.5rem;
-  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.3s ease;
+}
+
+.confirm-button {
+  background: var(--accent-color);
+  color: white;
+  border: none;
 }
 
 .cancel-button:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.confirm-button:hover {
+  background: var(--accent-color-dark);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .loading {
