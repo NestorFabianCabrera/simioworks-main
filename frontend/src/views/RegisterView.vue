@@ -1,58 +1,13 @@
-<script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useAuthStore } from '../stores/auth';
-
-const router = useRouter();
-const authStore = useAuthStore();
-
-const formData = ref({
-  username: '',
-  email: '',
-  password: '',
-  confirmPassword: ''
-});
-
-const loading = ref(false);
-const error = ref('');
-
-const handleSubmit = async () => {
-  if (!formData.value.username || !formData.value.email || !formData.value.password) {
-    error.value = 'Todos los campos son requeridos';
-    return;
-  }
-
-  if (formData.value.password !== formData.value.confirmPassword) {
-    error.value = 'Las contraseñas no coinciden';
-    return;
-  }
-
-  try {
-    loading.value = true;
-    error.value = '';
-    await authStore.register({
-      username: formData.value.username,
-      email: formData.value.email,
-      password: formData.value.password
-    });
-    router.push('/login');
-  } catch (err: any) {
-    error.value = err.message || 'Error al registrar usuario';
-  } finally {
-    loading.value = false;
-  }
-};
-</script>
-
 <template>
   <div class="auth-container">
     <div class="auth-content">
       <div class="brand">
-        <div class="logo">
-          <i class="fas fa-code-branch"></i>
+        <div class="logo-container">
+          <div class="logo">
+            <i class="fas fa-code-branch"></i>
+          </div>
+          <h1>SimioWorks</h1>
         </div>
-        <h1>SimioWorks</h1>
-        <p class="subtitle">Únete a nuestra plataforma</p>
       </div>
       
       <form @submit.prevent="handleSubmit" class="auth-form">
@@ -134,13 +89,60 @@ const handleSubmit = async () => {
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
+
+const router = useRouter();
+const authStore = useAuthStore();
+
+const formData = ref({
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: ''
+});
+
+const loading = ref(false);
+const error = ref('');
+
+const handleSubmit = async () => {
+  if (!formData.value.username || !formData.value.email || !formData.value.password) {
+    error.value = 'Todos los campos son requeridos';
+    return;
+  }
+
+  if (formData.value.password !== formData.value.confirmPassword) {
+    error.value = 'Las contraseñas no coinciden';
+    return;
+  }
+
+  try {
+    loading.value = true;
+    error.value = '';
+    await authStore.register({
+      username: formData.value.username,
+      email: formData.value.email,
+      password: formData.value.password
+    });
+    router.push('/login');
+  } catch (err: any) {
+    error.value = err.message || 'Error al registrar usuario';
+  } finally {
+    loading.value = false;
+  }
+};
+</script>
+
 <style scoped>
 .auth-container {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  overflow: hidden;
 }
 
 .auth-content {
@@ -154,45 +156,41 @@ const handleSubmit = async () => {
   margin-bottom: 3rem;
 }
 
-.logo {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 1.5rem;
-  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 16px rgba(52, 152, 219, 0.2);
-}
-
-.logo i {
-  font-size: 2.5rem;
-  color: white;
-}
-
 .brand h1 {
   color: white;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
   margin: 0;
   letter-spacing: -0.5px;
 }
 
-.subtitle {
-  color: #94a3b8;
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(52, 152, 219, 0.2);
+  flex-shrink: 0;
+}
+
+.logo i {
+  font-size: 2rem;
+  color: white;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-}
-
-.form-group {
-  position: relative;
 }
 
 .input-group {
@@ -263,10 +261,6 @@ const handleSubmit = async () => {
   cursor: not-allowed;
 }
 
-.auth-button i {
-  font-size: 1.1rem;
-}
-
 .error-message {
   background: rgba(231, 76, 60, 0.1);
   border: 1px solid #e74c3c;
@@ -299,24 +293,5 @@ const handleSubmit = async () => {
 
 .form-footer a:hover {
   color: #2980b9;
-}
-
-@media (max-width: 480px) {
-  .auth-content {
-    padding: 1.5rem;
-  }
-
-  .logo {
-    width: 60px;
-    height: 60px;
-  }
-
-  .logo i {
-    font-size: 2rem;
-  }
-
-  .brand h1 {
-    font-size: 1.75rem;
-  }
 }
 </style>

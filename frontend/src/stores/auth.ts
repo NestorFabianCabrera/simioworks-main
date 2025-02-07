@@ -18,6 +18,27 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    async register(data: { username: string; email: string; password: string }) {
+      try {
+        this.loading = true;
+        this.error = null;
+        const response = await axios.post(`${API_URL}/users/register`, data);
+        
+        this.token = response.data.token;
+        this.user = response.data.user;
+        
+        localStorage.setItem('token', response.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+        
+        await router.push('/dashboard');
+      } catch (error: any) {
+        this.error = error.response?.data?.error || 'Error al registrarse';
+        throw new Error(this.error);
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async login(email: string, password: string) {
       try {
         this.loading = true;
@@ -47,6 +68,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
+      router.push('/login');
     },
 
     async checkAuth() {
