@@ -51,7 +51,6 @@ export const useTaskStore = defineStore('tasks', {
         this.currentTask = response.data;
         return response.data;
       } catch (error: any) {
-        console.error('Error fetching task:', error);
         this.error = error.response?.data?.error || 'Error al obtener la tarea';
         throw new Error(this.error);
       } finally {
@@ -71,7 +70,6 @@ export const useTaskStore = defineStore('tasks', {
         this.tasks.unshift(response.data);
         return response.data;
       } catch (error: any) {
-        console.error('Error creating task:', error);
         this.error = error.response?.data?.error || error.message || 'Error al crear la tarea';
         throw new Error(this.error);
       } finally {
@@ -93,7 +91,6 @@ export const useTaskStore = defineStore('tasks', {
         }
         return response.data;
       } catch (error: any) {
-        console.error('Error updating task:', error);
         this.error = error.response?.data?.error || 'Error al actualizar la tarea';
         throw new Error(this.error);
       } finally {
@@ -105,19 +102,13 @@ export const useTaskStore = defineStore('tasks', {
       try {
         this.loading = true;
         this.error = null;
-        console.log('Updating task status:', taskId, status);
         const response = await axios.patch(`${API_URL}/tasks/${taskId}`, { status });
-        console.log('Task update response:', response.data);
-        
-        // Actualizar la tarea en el array local
         const taskIndex = this.tasks.findIndex(t => t._id === taskId);
         if (taskIndex !== -1) {
           this.tasks[taskIndex] = response.data;
         }
-        
         return response.data;
       } catch (error: any) {
-        console.error('Error updating task:', error);
         this.error = error.response?.data?.error || error.message || 'Error al actualizar la tarea';
         throw new Error(this.error);
       } finally {
@@ -132,16 +123,12 @@ export const useTaskStore = defineStore('tasks', {
         const response = await axios.patch(`${API_URL}/tasks/${taskId}`, { 
           assignedTo: userId === '' ? null : userId 
         });
-        
-        // Actualizar la tarea en el array local
         const taskIndex = this.tasks.findIndex(t => t._id === taskId);
         if (taskIndex !== -1) {
           this.tasks[taskIndex] = response.data;
         }
-        
         return response.data;
       } catch (error: any) {
-        console.error('Error updating task assignment:', error);
         this.error = error.response?.data?.error || error.message || 'Error al actualizar la asignación de la tarea';
         throw new Error(this.error);
       } finally {
@@ -154,12 +141,11 @@ export const useTaskStore = defineStore('tasks', {
         this.loading = true;
         this.error = null;
         await axios.delete(`${API_URL}/tasks/${id}`);
-        this.tasks = this.tasks.filter(t => t.id !== id);
+        this.tasks = this.tasks.filter(t => t._id !== id);
         if (this.currentTask?.id === id) {
           this.currentTask = null;
         }
       } catch (err: any) {
-        console.error('Error deleting task:', err);
         this.error = err.response?.data?.error || 'Error al eliminar la tarea';
         throw this.error;
       } finally {
@@ -180,7 +166,6 @@ export const useTaskStore = defineStore('tasks', {
         });
         return response.data.url;
       } catch (err: any) {
-        console.error('Error uploading attachment:', err);
         this.error = err.response?.data?.error || 'Error al subir el archivo';
         throw this.error;
       } finally {

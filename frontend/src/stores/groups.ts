@@ -24,13 +24,10 @@ export const useGroupStore = defineStore('groups', {
       try {
         this.loading = true;
         this.error = null;
-        console.log('Fetching groups...');
         const response = await axios.get(`${API_URL}/groups`);
-        console.log('Groups response:', response.data);
         this.groups = response.data;
         return response.data;
       } catch (error: any) {
-        console.error('Error fetching groups:', error);
         this.error = error.response?.data?.error || error.message || 'Error al obtener los grupos';
         throw new Error(this.error);
       } finally {
@@ -46,18 +43,10 @@ export const useGroupStore = defineStore('groups', {
 
         this.loading = true;
         this.error = null;
-        console.log('Fetching group:', id);
         
-        // Primero obtener los datos del grupo
         const response = await axios.get(`${API_URL}/groups/${id}`);
-        console.log('Group response:', response.data);
-        
-        // Obtener las tareas del grupo
-        console.log('Fetching group tasks...');
         const tasksResponse = await axios.get(`${API_URL}/tasks/group/${id}`);
-        console.log('Tasks response:', tasksResponse.data);
         
-        // Asignar las tareas al grupo y actualizar el estado
         const groupWithTasks = {
           ...response.data,
           tasks: tasksResponse.data || []
@@ -66,7 +55,6 @@ export const useGroupStore = defineStore('groups', {
         this.currentGroup = groupWithTasks;
         return groupWithTasks;
       } catch (error: any) {
-        console.error('Error fetching group:', error);
         this.error = error.response?.data?.error || error.message || 'Error al obtener el grupo';
         throw new Error(this.error);
       } finally {
@@ -78,16 +66,13 @@ export const useGroupStore = defineStore('groups', {
       try {
         this.loading = true;
         this.error = null;
-        console.log('Creating group:', { title, description });
         const response = await axios.post(`${API_URL}/groups`, {
           title,
           description
         });
-        console.log('Create group response:', response.data);
         this.groups.unshift(response.data);
         return response.data;
       } catch (error: any) {
-        console.error('Error creating group:', error);
         this.error = error.response?.data?.error || error.message || 'Error al crear el grupo';
         throw new Error(this.error);
       } finally {
@@ -99,10 +84,7 @@ export const useGroupStore = defineStore('groups', {
       try {
         this.loading = true;
         this.error = null;
-        console.log('Updating group:', id, data);
         const response = await axios.patch(`${API_URL}/groups/${id}`, data);
-        console.log('Update group response:', response.data);
-        
         const index = this.groups.findIndex(g => g._id === id);
         if (index !== -1) {
           this.groups[index] = response.data;
@@ -110,10 +92,8 @@ export const useGroupStore = defineStore('groups', {
         if (this.currentGroup?._id === id) {
           this.currentGroup = response.data;
         }
-        
         return response.data;
       } catch (error: any) {
-        console.error('Error updating group:', error);
         this.error = error.response?.data?.error || error.message || 'Error al actualizar el grupo';
         throw new Error(this.error);
       } finally {
@@ -122,21 +102,20 @@ export const useGroupStore = defineStore('groups', {
     },
 
     async addMember(groupId: string, userId: string) {
-      if (!groupId || !userId) {
-        throw new Error('ID de grupo o usuario no válido');
-      }
       try {
         this.loading = true;
         this.error = null;
-        const response = await axios.post(`${API_URL}/groups/${groupId}/members`, {
-          userId
-        });
+        const response = await axios.post(`${API_URL}/groups/${groupId}/members`, { userId });
         if (this.currentGroup?._id === groupId) {
           this.currentGroup = response.data;
         }
+        const index = this.groups.findIndex(g => g._id === groupId);
+        if (index !== -1) {
+          this.groups[index] = response.data;
+        }
         return response.data;
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al agregar miembro';
+        this.error = error.response?.data?.error || error.message || 'Error al agregar miembro';
         throw new Error(this.error);
       } finally {
         this.loading = false;
@@ -144,9 +123,6 @@ export const useGroupStore = defineStore('groups', {
     },
 
     async removeMember(groupId: string, userId: string) {
-      if (!groupId || !userId) {
-        throw new Error('ID de grupo o usuario no válido');
-      }
       try {
         this.loading = true;
         this.error = null;
@@ -154,9 +130,13 @@ export const useGroupStore = defineStore('groups', {
         if (this.currentGroup?._id === groupId) {
           this.currentGroup = response.data;
         }
+        const index = this.groups.findIndex(g => g._id === groupId);
+        if (index !== -1) {
+          this.groups[index] = response.data;
+        }
         return response.data;
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al eliminar miembro';
+        this.error = error.response?.data?.error || error.message || 'Error al remover miembro';
         throw new Error(this.error);
       } finally {
         this.loading = false;
@@ -164,9 +144,6 @@ export const useGroupStore = defineStore('groups', {
     },
 
     async deleteGroup(groupId: string) {
-      if (!groupId) {
-        throw new Error('ID de grupo no válido');
-      }
       try {
         this.loading = true;
         this.error = null;
@@ -176,7 +153,7 @@ export const useGroupStore = defineStore('groups', {
           this.currentGroup = null;
         }
       } catch (error: any) {
-        this.error = error.response?.data?.message || 'Error al eliminar el grupo';
+        this.error = error.response?.data?.error || error.message || 'Error al eliminar el grupo';
         throw new Error(this.error);
       } finally {
         this.loading = false;
@@ -187,12 +164,9 @@ export const useGroupStore = defineStore('groups', {
       try {
         this.loading = true;
         this.error = null;
-        console.log('Generating invite link for group:', groupId);
         const response = await axios.post(`${API_URL}/groups/${groupId}/invite`);
-        console.log('Invite link response:', response.data);
         return response.data;
       } catch (error: any) {
-        console.error('Error generating invite link:', error);
         this.error = error.response?.data?.error || error.message || 'Error al generar el enlace de invitación';
         throw new Error(this.error);
       } finally {
